@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Мої результати</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='navbar.css') }}">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f8f9fa;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #2c3e50;
+      position: relative;
+    }
+    .container {
+      max-width: 900px;
+      margin: 2rem auto;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 1.8rem;
+      color: #2c3e50;
+      text-align: center;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 12px 15px;
+      border: 1px solid #ddd;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+    th {
+      background-color: #3498db;
+      color: #ffffff;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .delete-btn {
+      background-color: #e74c3c;
+      color: #ffffff;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background-color 0.2s;
+    }
+    .delete-btn:hover {
+      background-color: #c0392b;
+    }
+    p.empty {
+      text-align: center;
+      color: #7f8c8d;
+      font-size: 1rem;
+    }
+    .pagination {
+      margin: 20px 0;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .pagination a {
+      margin: 0 10px;
+      text-decoration: none;
+      color: #2980b9;
+    }
+    .pagination span {
+      margin: 0 10px;
+      color: #2c3e50;
+    }
+  </style>
+</head>
+<body>
+  {% include '_navbar.html' %}
+  <div class="container">
+    <h1>Історія класифікацій{% if is_admin %} (адміністратор){% endif %}</h1>
+    {% if results %}
+      <table>
+        <thead>
+          <tr>
+            {% if is_admin %}
+            <th>Користувач</th>
+            {% endif %}
+            <th>Заголовок</th>
+            <th>Ймовірність</th>
+            <th>Клікбейт</th>
+            <th>Дія</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for r in results %}
+          <tr>
+            {% if is_admin %}
+            <td>{{ r[1] }}</td>
+            {% endif %}
+            <td>{{ r[2] }}</td>
+            <td>{{ '%.4f'|format(r[3]) }}</td>
+            <td>{{ 'Так' if r[4] else 'Ні' }}</td>
+            <td>
+              <form method="post" action="{{ url_for('results.delete_result', result_id=r[0]) }}">
+                <button type="submit" class="delete-btn">Видалити</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+
+      <div class="pagination">
+        {% if page > 1 %}
+          <a href="{{ url_for('results.results', page=page-1) }}">« Попередня</a>
+        {% endif %}
+        <span>Сторінка {{ page }} з {{ total_pages }}</span>
+        {% if page < total_pages %}
+          <a href="{{ url_for('results.results', page=page+1) }}">Наступна »</a>
+        {% endif %}
+      </div>
+
+    {% else %}
+      <p class="empty">У вас поки немає збережених результатів.</p>
+    {% endif %}
+
+  </div>
+</body>
+</html>
