@@ -25,7 +25,7 @@ def plot_histogram(df, column, bins, hue=None):
 def plot_scatter(df, x_col, y_col):
     plt.figure()
     df.plot.scatter(x=x_col, y=y_col)
-    plt.title(f'Scatter: {y_col} vs {x_col}')
+    plt.title(f'Точкова діаграма: {y_col} vs {x_col}')
     plt.tight_layout()
     plt.show()
 
@@ -35,6 +35,6 @@ def plot_pie(df, column):
     plt.figure()
     counts.plot.pie(autopct='%1.1f%%', startangle=90)
     plt.ylabel('')
-    plt.title(f'Pie Chart of {column}')
+    plt.title(f'Кругова діаграма {column}')
     plt.tight_layout()
     plt.show()

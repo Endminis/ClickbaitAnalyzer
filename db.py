@@ -42,8 +42,8 @@ def init_db():
         cur.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
-                login TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL
+                login VARCHAR(50) UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL
             );
         """)
         cur.execute("""

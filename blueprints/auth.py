@@ -1,3 +1,4 @@
+import re
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from psycopg2 import IntegrityError
@@ -6,13 +7,27 @@ from db import get_connection
 
 auth_bp = Blueprint('auth', __name__)
 
+
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         login = request.form.get('login', '').strip()
         pwd   = request.form.get('password', '').strip()
+
+        # Обмеження на довжину
         if not login or not pwd:
             flash('Заповніть всі поля', 'error')
+        elif len(login) > 50:
+            flash('Логін не може перевищувати 50 символів', 'error')
+        elif len(pwd) > 50:
+            flash('Пароль не може перевищувати 50 символів', 'error')
+
+        # Дозволені символи: літери, цифри, нижнє підкреслення, тире
+        elif not re.match(r'^[a-zA-Z0-9_-]+$', login):
+            flash('Логін може містити лише латинські літери, цифри, підкреслення або тире', 'error')
+        elif not re.match(r'^[a-zA-Z0-9!@#$%^&*()_\-+=]+$', pwd):
+            flash('Пароль повинен містити лише латинські літери, цифри та спецсимволи !@#$%^&*()-+=', 'error')
+
         else:
             hashed = generate_password_hash(pwd)
             try:
@@ -20,7 +35,7 @@ def register():
                 conn.autocommit = True
                 cur = conn.cursor()
                 cur.execute(
-                    "INSERT INTO users (login, password) VALUES (%s, %s)",
+                    "INSERT INTO users (login, password_hash) VALUES (%s, %s)",
                     (login, hashed)
                 )
                 cur.close()
@@ -31,6 +46,7 @@ def register():
                 flash('Користувач із таким логіном уже існує', 'error')
             except Exception as e:
                 flash(f'Помилка реєстрації: {e}', 'error')
+
     return render_template('register.html')
 
 
@@ -43,7 +59,7 @@ def login():
         conn = get_connection(DB_CONFIG['database'])
         cur  = conn.cursor()
         cur.execute(
-            "SELECT id, password FROM users WHERE login = %s",
+            "SELECT id, password_hash FROM users WHERE login = %s",
             (login,)
         )
         row = cur.fetchone()

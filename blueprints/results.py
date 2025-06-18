@@ -15,6 +15,7 @@ def results():
     page = request.args.get('page', 1, type=int)
     per_page = 5
     offset = (page - 1) * per_page
+    query = request.args.get('query', '', type=str).strip()
 
     is_admin = session.get('login') == 'admin'
 
@@ -23,29 +24,63 @@ def results():
         cur = conn.cursor()
 
         if is_admin:
-            cur.execute("SELECT COUNT(*) FROM classification_results")
+            if query:
+                cur.execute(
+                    "SELECT COUNT(*) FROM classification_results WHERE title ILIKE %s",
+                    (f'%{query}%',)
+                )
+            else:
+                cur.execute("SELECT COUNT(*) FROM classification_results")
             total = cur.fetchone()[0]
-            cur.execute(
-                "SELECT id, user_login, title, probability, is_clickbait "
-                "FROM classification_results "
-                "ORDER BY id DESC "
-                "LIMIT %s OFFSET %s",
-                (per_page, offset)
-            )
+
+            if query:
+                cur.execute(
+                    "SELECT id, user_login, title, probability, is_clickbait "
+                    "FROM classification_results "
+                    "WHERE title ILIKE %s "
+                    "ORDER BY id DESC "
+                    "LIMIT %s OFFSET %s",
+                    (f'%{query}%', per_page, offset)
+                )
+            else:
+                cur.execute(
+                    "SELECT id, user_login, title, probability, is_clickbait "
+                    "FROM classification_results "
+                    "ORDER BY id DESC "
+                    "LIMIT %s OFFSET %s",
+                    (per_page, offset)
+                )
         else:
-            cur.execute(
-                "SELECT COUNT(*) FROM classification_results WHERE user_login = %s",
-                (session['login'],)
-            )
+            if query:
+                cur.execute(
+                    "SELECT COUNT(*) FROM classification_results WHERE user_login = %s AND title ILIKE %s",
+                    (session['login'], f'%{query}%')
+                )
+            else:
+                cur.execute(
+                    "SELECT COUNT(*) FROM classification_results WHERE user_login = %s",
+                    (session['login'],)
+                )
             total = cur.fetchone()[0]
-            cur.execute(
-                "SELECT id, user_login, title, probability, is_clickbait "
-                "FROM classification_results "
-                "WHERE user_login = %s "
-                "ORDER BY id DESC "
-                "LIMIT %s OFFSET %s",
-                (session['login'], per_page, offset)
-            )
+
+            if query:
+                cur.execute(
+                    "SELECT id, user_login, title, probability, is_clickbait "
+                    "FROM classification_results "
+                    "WHERE user_login = %s AND title ILIKE %s "
+                    "ORDER BY id DESC "
+                    "LIMIT %s OFFSET %s",
+                    (session['login'], f'%{query}%', per_page, offset)
+                )
+            else:
+                cur.execute(
+                    "SELECT id, user_login, title, probability, is_clickbait "
+                    "FROM classification_results "
+                    "WHERE user_login = %s "
+                    "ORDER BY id DESC "
+                    "LIMIT %s OFFSET %s",
+                    (session['login'], per_page, offset)
+                )
 
         rows = cur.fetchall()
         total_pages = math.ceil(total / per_page) if total > 0 else 1
@@ -62,7 +97,8 @@ def results():
         results=rows,
         page=page,
         total_pages=total_pages,
-        is_admin=is_admin
+        is_admin=is_admin,
+        query=query
     )
 
 
@@ -72,6 +108,8 @@ def delete_result(result_id):
         return redirect(url_for('auth.login'))
 
     is_admin = session.get('login') == 'admin'
+    page = request.args.get('page', 1, type=int)
+    query = request.args.get('query', '', type=str).strip()
 
     try:
         conn = get_connection(DB_CONFIG['database'])
@@ -88,8 +126,9 @@ def delete_result(result_id):
 
         cur.close()
         conn.close()
+        flash('Запис успішно видалено', 'success')
     except Exception as e:
         current_app.logger.error(f"[Error] Не вдалося видалити запис: {e}")
         flash('Не вдалося видалити запис', 'error')
 
-    return redirect(url_for('results.results'))
+    return redirect(url_for('results.results', page=page, query=query))

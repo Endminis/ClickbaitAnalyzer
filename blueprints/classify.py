@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, session, flash, current_app, url_for, redirect
 
 from config import DB_CONFIG
-from predict import predict_clickbait, shap_explain_clickbait
+from predict import predict_clickbait
 from utils.text_utils import clean_text, contains_cyrillic, has_minimum_words
 from db import get_connection
 
@@ -16,13 +16,10 @@ def index():
     title_raw = ''
     result = None
     probability = None
-    explanations = []
-    explain = False  # прапорець
 
     if request.method == 'POST':
         title_raw = request.form.get('title', '').strip()
         title_clean = clean_text(title_raw)
-        explain = 'explain' in request.form  # перевірка чекбоксу
 
         # Валідація тексту
         if not contains_cyrillic(title_clean):
@@ -32,8 +29,6 @@ def index():
         else:
             try:
                 result, probability = predict_clickbait(title_clean)
-                if explain:
-                    explanations = shap_explain_clickbait(title_clean)
             except Exception as e:
                 current_app.logger.error(f"[Error] Класифікація не вдалася: {e}")
                 flash("Сталася помилка під час обробки заголовка.", "error")
@@ -42,14 +37,26 @@ def index():
                 conn = get_connection(DB_CONFIG['database'])
                 conn.autocommit = True
                 cur = conn.cursor()
+
                 cur.execute(
                     """
-                    INSERT INTO classification_results
-                        (user_login, title, is_clickbait, probability)
-                    VALUES (%s, %s, %s, %s)
+                    SELECT 1 FROM classification_results
+                    WHERE user_login = %s AND title = %s
                     """,
-                    (session['login'], title_raw, result, probability)
+                    (session['login'], title_raw)
                 )
+                exists = cur.fetchone()
+
+                if not exists:
+                    cur.execute(
+                        """
+                        INSERT INTO classification_results
+                            (user_login, title, is_clickbait, probability)
+                        VALUES (%s, %s, %s, %s)
+                        """,
+                        (session['login'], title_raw, result, probability)
+                    )
+
                 cur.close()
                 conn.close()
             except Exception as e:
@@ -59,7 +66,5 @@ def index():
         'index.html',
         title=title_raw,
         result=result,
-        score=probability,
-        explanations=explanations,
-        explain=explain
+        score=probability
     )

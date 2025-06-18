@@ -98,12 +98,7 @@
             text-align: center;
             font-size: 1.2rem;
         }
-        .clickbait {
-            color: #e74c3c;
-        }
-        .not-clickbait {
-            color: #2ecc71;
-        }
+
         .flashes {
             list-style: none;
             padding: 0;
@@ -148,64 +143,15 @@
                 <label for="title">Заголовок</label>
                 <textarea name="title" id="title" rows="3" placeholder="Вставте тут заголовок..." required>{{ title }}</textarea>
             </div>
-            <div class="form-group" style="text-align: center; margin-top: -10px;">
-              <label style="display: inline-block; font-weight: normal;">
-                <input type="checkbox" name="explain" {% if explain %}checked{% endif %}>
-                Детальний аналіз
-              </label>
-            </div>
             <button type="submit">Аналізувати</button>
         </form>
     </div>
 
     {% if result is not none %}
-      <div class="result-card {{ 'clickbait' if result else 'not-clickbait' }}">
-          {{ 'Клікбейт' if result else 'Не клікбейт' }}
+      <div class="result-card">
           {% if score is not none %}
-              <p>Ймовірність клікбейту: {{ '%.4f'|format(score) }}</p>
+              <p>Даний заголовок є клікбейтним з ймовірністю: {{ '%.2f'|format(score * 100) }}%</p>
           {% endif %}
-
-            {% if explanations %}
-            <div class="result-card">
-              <p>Орієнтовний внесок токенів у прогноз.</p>
-              <p>(чим більше значення, тим більший внесок)</p>
-                <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-                  <thead>
-                    <tr style="background-color: #f0f0f0;">
-                      <th style="padding: 8px; border: 1px solid #ccc;">Токен</th>
-                      <th style="padding: 8px; border: 1px solid #ccc;">Внесок</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for token, score in explanations %}
-                    {% set intensity = (score | abs) / 1.5 %}
-                    {% if score < 0 %}
-                      {% set bg_color = 'rgba(46, 204, 113, ' ~ intensity ~ ')' %}
-                      {% set text_color = 'black' if intensity < 0.5 else 'white' %}
-                    {% else %}
-                      {% set bg_color = 'rgba(231, 76, 60, ' ~ intensity ~ ')' %}
-                      {% set text_color = 'black' if intensity < 0.5 else 'white' %}
-                    {% endif %}
-                    <tr>
-                      <td style="padding: 8px; border: 1px solid #ccc; text-align: center;">
-                        <code>{{ token }}</code>
-                      </td>
-                      <td style="
-                        padding: 8px;
-                        border: 1px solid #ccc;
-                        text-align: center;
-                        background-color: {{ bg_color }};
-                        color: {{ text_color }};
-                      ">
-                        {{ '%.4f'|format(score) }}
-                      </td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-
-            </div>
-            {% endif %}
       </div>
     {% endif %}
   </div>

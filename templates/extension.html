@@ -33,6 +33,19 @@
       color: #2c3e50;
       text-align: center;
     }
+    button {
+      background-color: #3498db;
+      margin: 1rem auto 0;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -102,12 +115,15 @@
     {% if is_admin %}
       <h1>Історія класифікацій (адміністратор)</h1>
       {% if results %}
+      <form method="get" action="{{ url_for('extension.extension') }}" style="margin-bottom: 1rem; text-align: left;">
+        <input type="text" name="query" placeholder="Пошук за заголовком..." value="{{ query }}" style="padding: 8px; width: 300px;">
+        <button type="submit" style="padding: 8px 12px;">Знайти</button>
+      </form>
         <table>
           <thead>
             <tr>
               <th>Заголовок</th>
               <th>Ймовірність</th>
-              <th>Клікбейт</th>
               <th>Дія</th>
             </tr>
           </thead>
@@ -115,10 +131,9 @@
           {% for r in results %}
             <tr>
               <td>{{ r[1] }}</td>
-              <td>{{ '%.4f'|format(r[2]) }}</td>
-              <td>{{ 'Так' if r[3] else 'Ні' }}</td>
+              <td>{{ '%.2f'|format(r[2] * 100) }}%</td>
               <td>
-                <form method="post" action="{{ url_for('extension.delete_result', result_id=r[0]) }}">
+                <form method="post" action="{{ url_for('extension.delete_result', result_id=r[0], page=page, query=query) }}">
                   <button type="submit" class="delete-btn">Видалити</button>
                 </form>
               </td>
@@ -127,15 +142,23 @@
           </tbody>
         </table>
 
-        <div class="pagination">
-          {% if page > 1 %}
-            <a href="{{ url_for('extension.extension', page=page-1) }}">« Попередня</a>
-          {% endif %}
-          <span>Сторінка {{ page }} з {{ total_pages }}</span>
-          {% if page < total_pages %}
-            <a href="{{ url_for('extension.extension', page=page+1) }}">Наступна »</a>
-          {% endif %}
-        </div>
+   <div class="pagination">
+      {% if page > 1 %}
+        <a href="{{ url_for('extension.extension', page=page-1, query=query) }}">« Попередня</a>
+      {% endif %}
+      <span>Сторінка {{ page }} з {{ total_pages }}</span>
+
+      <form method="get" action="{{ url_for('extension.extension') }}" style="display: inline-block; margin-left: 10px;">
+        <input type="hidden" name="query" value="{{ query }}">
+        <label for="page">Перейти:</label>
+        <input type="number" name="page" min="1" max="{{ total_pages }}" value="{{ page }}" style="width: 60px;">
+        <button type="submit">Перейти</button>
+      </form>
+
+      {% if page < total_pages %}
+        <a href="{{ url_for('extension.extension', page=page+1, query=query) }}">Наступна »</a>
+      {% endif %}
+    </div>
       {% else %}
         <p class="empty">У вас поки немає збережених результатів.</p>
       {% endif %}
